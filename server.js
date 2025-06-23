@@ -1,8 +1,15 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 const app = express();
 const port = 3000;
+
+// Asegurar directorio de subidas
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
 // Configurar Multer para almacenamiento de archivos
 const storage = multer.diskStorage({
@@ -15,7 +22,16 @@ const upload = multer({ storage });
 
 // Servir archivos estáticos
 app.use(express.static('public'));
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+    setHeaders: (res, filePath) => {
+        // Permite acceso desde cualquier dominio
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        // Métodos permitidos
+        res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,OPTIONS');
+        // Permite ciertos headers
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    }
+}));
 
 // Ruta para la página principal
 app.get('/', (req, res) => {
@@ -32,10 +48,3 @@ app.listen(port, () => {
     console.log(`Servidor corriendo en http://localhost:${port}`);
 });
 
-app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
-    setHeaders: (res, path) => {
-        res.setHeader('Access-Control-Allow-Origin', '*');  // Permite acceso desde cualquier dominio
-        res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,OPTIONS');  // Métodos permitidos
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type'); // Permite ciertos headers
-    }
-}));
